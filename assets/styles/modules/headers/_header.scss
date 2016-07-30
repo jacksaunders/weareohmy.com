@@ -1,0 +1,7 @@
+.header {
+  @include container;
+
+  .header__menu-icon {
+    @include span(2);
+  }
+}
