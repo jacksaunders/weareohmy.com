@@ -1,0 +1,21 @@
+{
+  "name": "weareohmy.com",
+  "description": "Front end site for weareohmy.com",
+  "main": "index.js",
+  "authors": [
+    "Jack Saunders"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "susy": "^2.2.12",
+    "normalize-scss": "normalize.scss#^5.0.3"
+  }
+}
