@@ -3,14 +3,18 @@ var gulp         = require('gulp');
 var argv          = require('minimist')(process.argv.slice(2));
 var autoprefixer  = require('gulp-autoprefixer');
 var browserSync   = require('browser-sync').create();
+var clone         = require('gulp-clone');
 var concat        = require('gulp-concat');
 var changed       = require('gulp-changed');
 var cssnano       = require('gulp-cssnano');
 var gulpif        = require('gulp-if');
+var imagemin      = require('gulp-imagemin');
 var lazypipe      = require('lazypipe');
-var plumber       = require('gulp-plumber');
 var merge         = require('merge-stream');
+var plumber       = require('gulp-plumber');
+var rename        = require('gulp-rename');
 var rev           = require('gulp-rev');
+var run           = require('gulp-run');
 var sourcemaps    = require('gulp-sourcemaps');
 var sass          = require('gulp-sass');
 var wiredep       = require('wiredep');
@@ -141,3 +145,69 @@ var writeToManifest = function(directory) {
     })
     .pipe(gulp.dest, path.dist)();
 };
+
+
+// javascript
+var jsTasks = function(filename) {
+  return lazypipe()
+    .pipe(function() {
+      return gulpif(enabled.maps, sourcemaps.init());
+    })
+    .pipe(concat, filename)
+    // .pipe(uglify, {
+    //   compress: {
+    //     'drop_debugger': enabled.stripJSDebug
+    //   }
+    // })
+    .pipe(function() {
+      return gulpif(enabled.rev, rev());
+    })
+    .pipe(function() {
+      return gulpif(enabled.maps, sourcemaps.write('.', {
+        sourceRoot: 'assets/scripts/'
+      }));
+    })();
+};
+
+
+// ### JSHint
+// `gulp jshint` - Lints configuration JSON and project JS.
+gulp.task('jshint', function() {
+  return gulp.src([
+    'bower.json', 'gulpfile.js'
+  ].concat(project.js))
+    .pipe(jshint())
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(gulpif(enabled.failJSHint, jshint.reporter('fail')));
+});
+
+// ### Scripts
+// `gulp scripts` - Runs JSHint then compiles, combines, and optimizes Bower JS
+// and project JS.
+gulp.task('scripts', ['jshint'], function() {
+  var merged = merge();
+  manifest.forEachDependency('js', function(dep) {
+    merged.add(
+      gulp.src(dep.globs, {base: 'scripts'})
+        .pipe(jsTasks(dep.name))
+    );
+  });
+  return merged
+    .pipe(writeToManifest('scripts'));
+});
+
+
+// ### Images
+// `gulp images` - Run lossless compression on all the images.
+gulp.task('images', function() {
+  var cloneSink = clone.sink();
+  return run('hbs-svg assets/images/ --hf dist/helpers.js --if dist/images').exec();
+  return gulp.src(globs.images)
+    .pipe(imagemin({
+      progressive: true,
+      interlaced: true,
+      svgoPlugins: [{removeUnknownsAndDefaults: false}, {cleanupIDs: false}, {removeStyleElement: false}, {convertShapeToPath: true}]
+    }))
+    .pipe(gulp.dest(path.dist + 'images'))
+    .pipe(browserSync.stream());
+});

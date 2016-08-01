@@ -1,7 +1,9 @@
 var express = require('express')
   , logger = require('morgan')
   , app = express()
-  , exphbs  = require('express-handlebars');
+  , exphbs  = require('express-handlebars')
+  , hbssvg = require('./dist/helpers.js');
+
 
   app.engine('handlebars', exphbs({defaultLayout: 'main'}));
   app.set('view engine', 'handlebars');
